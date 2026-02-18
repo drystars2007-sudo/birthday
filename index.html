@@ -1,119 +1,108 @@
-<?php
-// index.php
-// NOTE: Microphone access MUST be handled by JavaScript in browser.
-?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
   <meta charset="UTF-8">
-  <title>Blow the Candle 🎂 (PHP + JS)</title>
+  <title>ফুঁ দিয়ে বাতি নিভাও 🎂</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #111;
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
+    body{
+      margin:0;min-height:100vh;display:flex;flex-direction:column;
+      justify-content:center;align-items:center;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: radial-gradient(circle at top,#222,#000);
+      color:#fff;text-align:center;padding:16px;
     }
-    .cake {
-      position: relative;
-      width: 200px;
-      height: 150px;
-      background: #d2691e;
-      border-radius: 10px;
-      margin-top: 40px;
+    h1{font-size:1.4rem;margin-bottom:10px}
+    .cake{position:relative;width:180px;height:130px;
+      background:linear-gradient(#e08b3a,#b35c1e);
+      border-radius:14px;margin-top:24px;
+      box-shadow:0 10px 25px rgba(0,0,0,.6)}
+    .candle{position:absolute;top:-55px;left:50%;transform:translateX(-50%);
+      width:18px;height:55px;background:#fff;border-radius:6px}
+    .flame{position:absolute;top:-24px;left:50%;transform:translateX(-50%);
+      width:18px;height:24px;border-radius:50%;
+      background:radial-gradient(circle,#ffd27d,orange,red);
+      animation:flicker .12s infinite}
+    @keyframes flicker{0%{opacity:.9}50%{opacity:.6}100%{opacity:.9}}
+    button{margin-top:16px;padding:12px 26px;border-radius:999px;border:0;
+      font-size:15px;font-weight:600;background:#ff9800;color:#000}
+    .msg{margin-top:12px;font-size:.95rem;min-height:1.2em}
+    .meter{width:180px;height:7px;background:#333;border-radius:5px;
+      overflow:hidden;margin-top:10px}
+    .bar{height:100%;width:0%;background:linear-gradient(90deg,#4caf50,#ff9800,#f44336);
+      transition:width .05s}
+    @media (min-width:600px){
+      h1{font-size:1.6rem}
+      .cake{width:200px;height:145px}
     }
-    .candle {
-      position: absolute;
-      top: -60px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 20px;
-      height: 60px;
-      background: #fff;
-      border-radius: 5px;
-    }
-    .flame {
-      position: absolute;
-      top: -25px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 20px;
-      height: 25px;
-      background: orange;
-      border-radius: 50%;
-      animation: flicker 0.15s infinite;
-    }
-    @keyframes flicker {
-      0% { transform: translateX(-50%) scale(1); }
-      50% { transform: translateX(-50%) scale(0.85); }
-      100% { transform: translateX(-50%) scale(1); }
-    }
-    button { margin-top: 20px; padding: 10px 20px; font-size: 16px; }
-    .msg { margin-top: 15px; }
   </style>
 </head>
 <body>
 
-<h1>🎤 Mic e fuu dao (PHP wrapper)</h1>
-<button id="start">Mic Allow & Start</button>
+<h1>🎤 শুধু ফুঁ দাও</h1>
+<button id="start">মাইক চালু করো</button>
 
 <div class="cake">
-  <div class="candle">
-    <div class="flame" id="flame"></div>
-  </div>
+  <div class="candle"><div class="flame" id="flame"></div></div>
 </div>
 
-<div class="msg" id="msg">Mic off</div>
+<div class="meter"><div class="bar" id="bar"></div></div>
+<div class="msg" id="msg">মাইক বন্ধ</div>
 
 <script>
-// JS PART (Browser-side) — PHP cannot access microphone
 let audioContext, analyser, dataArray;
 let flame = document.getElementById('flame');
 let msg = document.getElementById('msg');
+let bar = document.getElementById('bar');
 
-const THRESHOLD = 25;   // mobile-friendly
-const DURATION = 80;   // ms
+// HARDER + SMARTER SETTINGS
+const BLOW_THRESHOLD = 22;   // ফুঁ ধরার লেভেল
+const SPEECH_THRESHOLD = 45; // কথা বললে সাধারণত বেশি ওঠে
+const DURATION = 90;         // ms
 let blowStart = null;
 
-async function startMic() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+async function startMic(){
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    audioContext = new (window.AudioContext||window.webkitAudioContext)();
     const source = audioContext.createMediaStreamSource(stream);
     analyser = audioContext.createAnalyser();
     analyser.fftSize = 1024;
     dataArray = new Uint8Array(analyser.fftSize);
     source.connect(analyser);
-    msg.innerText = 'Mic listening... fuu dao 💨';
+    msg.innerText = 'শুধু ফুঁ দাও 💨';
     detect();
-  } catch (e) {
-    msg.innerText = 'Mic allow koro first ❌';
+  }catch(e){
+    msg.innerText = 'মাইকের অনুমতি দাও ❌';
   }
 }
 
-function detect() {
+function detect(){
   analyser.getByteTimeDomainData(dataArray);
   let sum = 0;
-  for (let i = 0; i < dataArray.length; i++) {
-    sum += Math.abs(dataArray[i] - 128);
+  for(let i=0;i<dataArray.length;i++){
+    sum += Math.abs(dataArray[i]-128);
   }
-  let volume = sum / dataArray.length;
+  let volume = sum/dataArray.length;
+  bar.style.width = Math.min(volume*4,100)+'%';
 
-  if (volume > THRESHOLD) {
-    if (!blowStart) blowStart = Date.now();
-    if (Date.now() - blowStart > DURATION) {
+  // যদি কথা বলে
+  if(volume > SPEECH_THRESHOLD){
+    blowStart = null;
+    msg.innerText = '❌ কথা বোলো না, শুধু ফুঁ দাও';
+  }
+  // ফুঁ চেক
+  else if(volume > BLOW_THRESHOLD){
+    if(!blowStart) blowStart = Date.now();
+    msg.innerText = 'ফুঁ দিচ্ছো...';
+    if(Date.now()-blowStart > DURATION){
       flame.style.display = 'none';
-      msg.innerText = '🔥 Candle nive geche!';
-      // Optional: notify server via AJAX
-      // fetch('blown.php', { method: 'POST' });
+      msg.innerText = '🔥 বাতি নিভে গেছে!';
       return;
     }
-  } else {
+  }else{
     blowStart = null;
+    msg.innerText = 'শুধু ফুঁ দাও 💨';
   }
   requestAnimationFrame(detect);
 }
