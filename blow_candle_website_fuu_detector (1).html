@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Blow the Candle 🎂</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .cake {
+      position: relative;
+      width: 200px;
+      height: 150px;
+      background: #d2691e;
+      border-radius: 10px;
+      margin-top: 40px;
+    }
+    .candle {
+      position: absolute;
+      top: -60px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 20px;
+      height: 60px;
+      background: #fff;
+      border-radius: 5px;
+    }
+    .flame {
+      position: absolute;
+      top: -25px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 20px;
+      height: 25px;
+      background: orange;
+      border-radius: 50%;
+      animation: flicker 0.15s infinite;
+    }
+    @keyframes flicker {
+      0% { transform: translateX(-50%) scale(1); }
+      50% { transform: translateX(-50%) scale(0.85); }
+      100% { transform: translateX(-50%) scale(1); }
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .msg { margin-top: 15px; }
+  </style>
+</head>
+<body>
+
+<h1>🎤 Mic e fuu dao</h1>
+<button id="start">Mic Allow & Start</button>
+
+<div class="cake">
+  <div class="candle">
+    <div class="flame" id="flame"></div>
+  </div>
+</div>
+
+<div class="msg" id="msg">Mic off</div>
+
+<script>
+let audioContext, analyser, dataArray;
+let flame = document.getElementById('flame');
+let msg = document.getElementById('msg');
+
+const THRESHOLD = 35;   // LOWER = more sensitive
+const DURATION = 120;  // ms
+let blowStart = null;
+
+async function startMic() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const source = audioContext.createMediaStreamSource(stream);
+    analyser = audioContext.createAnalyser();
+    analyser.fftSize = 1024;
+    dataArray = new Uint8Array(analyser.fftSize);
+    source.connect(analyser);
+    msg.innerText = 'Mic listening... fuu dao 💨';
+    detect();
+  } catch (e) {
+    msg.innerText = 'Mic allow koro first ❌';
+  }
+}
+
+function detect() {
+  analyser.getByteTimeDomainData(dataArray);
+
+  let sum = 0;
+  for (let i = 0; i < dataArray.length; i++) {
+    let val = dataArray[i] - 128;
+    sum += Math.abs(val);
+  }
+  let volume = sum / dataArray.length;
+
+  if (volume > THRESHOLD) {
+    if (!blowStart) blowStart = Date.now();
+    if (Date.now() - blowStart > DURATION) {
+      flame.style.display = 'none';
+      msg.innerText = '🔥 Candle nive geche!';
+      return;
+    }
+  } else {
+    blowStart = null;
+  }
+
+  requestAnimationFrame(detect);
+}
+
+start.onclick = startMic;
+</script>
+
+</body>
+</html>
